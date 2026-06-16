@@ -104,9 +104,9 @@ class FFTScheduler:
 # =====================================================================
 class NewArchScheduler:
     # ── TUNABLE PARAMETERS (Adjust these to find pros/cons!) ──
-    ALPHA = 0.8    # Weight of GPU demand
+    ALPHA = 0.1   # Weight of GPU demand
     BETA = 0.005   # Weight of Workload (Epochs)
-    GAMMA = 1.0    # Weight of Compute capability
+    GAMMA = 10.0    # Weight of Compute capability
     DELTA = 1.0    # Weight of Availability
     TAU_THRESH = 1.1 # Match threshold
     
