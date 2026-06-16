@@ -8,7 +8,7 @@ import copy
 # 1. CLUSTER & MODEL CONFIGURATION
 # =====================================================================
 NUM_GPU_TYPES = 3
-GPU_CAPACITY = {0: 12, 1: 12, 2: 12}  # 0: T4, 1: V100, 2: A10
+GPU_CAPACITY = {0: 120, 1: 120, 2: 120}  # 0: T4, 1: V100, 2: A10
 GPU_C_N = {0: 1.0, 1: 1.5, 2: 2.0}    # Compute capability
 
 STATE_SIZE_GB = np.array([0.15, 0.1, 0.2, 0.4, 2.5, 4.0, 12.0, 107.0])
