@@ -1,17 +1,18 @@
 {
-  "base_ms": 27.730508474576276,
-  "slope_ms_per_job": 0.09298305084745764,
+  "base_ms": 30.82867624372308,
+  "slope_ms_per_job": 0.07085445767142258,
   "measured_N": [
-    100.0,
-    200.0,
-    400.0,
-    600.0
+    100,
+    200,
+    400,
+    600
   ],
   "measured_ms": [
-    44.1,
-    36.8,
-    66.3,
-    84.6
+    43.09799999464303,
+    38.325199973769486,
+    59.559499961324036,
+    74.44280001800507
   ],
-  "note": "Linear fit to min-of-reps CBC solve times, 3 GPU types, lab machine. Base captures fixed CBC startup; slope captures per-job marginal solve cost. FFT solves over GPU types so scaling is near-linear in active jobs."
+  "round_seconds_default": 300.0,
+  "note": "Linear fit to min-of-reps CBC solve times, 3 GPU types. base = fixed CBC startup; slope = per-job marginal solve cost. Re-run calibrate_solver.py on target hardware before quoting."
 }
