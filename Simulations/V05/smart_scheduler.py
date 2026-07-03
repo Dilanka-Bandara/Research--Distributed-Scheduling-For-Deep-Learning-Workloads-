@@ -22,7 +22,8 @@ from __future__ import annotations
 from typing import Dict, List, Tuple
 from collections import deque
 
-from workload import Job, GPU_TYPES, GPU_CAPABILITY, profile_job
+from workload import (Job, GPU_TYPES, GPU_CAPABILITY, profile_job,
+                      migration_stall_rounds, profiling_stall_rounds)
 from fft_baseline import FFTScheduler
 
 
@@ -31,10 +32,10 @@ class SmartScheduler:
         self,
         cluster: Dict[str, int],
         # --- dispatcher score weights (the alpha/beta/gamma/delta to sweep) ---
-        alpha: float = 3.0,   # weight on requested workers d_j
-        beta: float = 2.5,    # weight on epochs W_j
-        gamma: float = 2.5,   # weight on node capability C_n
-        delta: float = 8.0,   # weight on node availability A_n
+        alpha: float = 1.0,   # weight on requested workers d_j
+        beta: float = 0.5,    # weight on epochs W_j
+        gamma: float = 1.0,   # weight on node capability C_n
+        delta: float = 1.0,   # weight on node availability A_n
         # --- the four upgrade dials ---
         threshold: float = 0.15,       # ΔS routing threshold (Pareto knob)
         slow_reserve: float = 0.25,    # fraction reserved for Slow Path
@@ -66,6 +67,7 @@ class SmartScheduler:
 
         # bookkeeping
         self.last_dispatch_cost = 0.0
+        self.handshake_rejects = 0
         self.last_solve_wall = 0.0
 
     # ------------------------------------------------------------------
@@ -121,18 +123,21 @@ class SmartScheduler:
         self.last_dispatch_cost = self.dispatch_cost  # O(1) cost, independent of N
 
         # Historical cache check (Slow Path will need theta; Fast needs it too).
-        if job.model in self.cache:
+        cache_hit = job.model in self.cache
+        if cache_hit:
             job.theta = dict(self.cache[job.model])
             job.mem_gb = profile_lookup_mem(job)
             job.state_gb = profile_lookup_state(job)
         else:
             profile_job(job)                 # micro-profile (first time only)
             self.cache[job.model] = dict(job.theta)
+        job.cache_hit = cache_hit
 
         fast_cap = int((1.0 - self.slow_reserve) * self.total_capacity)
         best_gpu, ds = self._best_node(job, t)
 
         # Fast Path: good match, room available, and under the reserve cap.
+        # Spec: Fast-Path jobs are profiled silently on-the-fly -> no stall.
         if (
             best_gpu is not None
             and ds <= self.threshold
@@ -141,7 +146,12 @@ class SmartScheduler:
             self._place(job, best_gpu, t, fast=True)
             return "fast"
 
-        # Slow Path: park in the global queue (event trigger wakes the brain).
+        # Slow Path: on a cache MISS the job pays the strict 60 s micro-profiling
+        # window (spec Sec. 3.3) before it can train; a HIT skips it entirely.
+        if not cache_hit:
+            p = profiling_stall_rounds()
+            job.stall += p
+            job.profile_time_lost += p
         self.global_queue.append(job)
         return "slow"
 
@@ -152,6 +162,11 @@ class SmartScheduler:
             if job.current_gpu is not None:
                 self.used[job.current_gpu] -= job.d_j
                 job.migrations += 1
+                # Real migration cost: the job stalls for the state-transfer
+                # time (paper Sec. 2.2: large training states over the LAN).
+                m = migration_stall_rounds(job.state_gb)
+                job.stall += m
+                job.migration_time_lost += m
             job.current_gpu = gpu
         self.used[gpu] += job.d_j
         if job.admit_time is None:
@@ -191,18 +206,19 @@ class SmartScheduler:
             target = alloc.get(job.job_id)
             if target is None:
                 continue
-            # capacity check before committing (the decentralised handshake)
+            # capacity check before committing (the decentralised handshake:
+            # target verifies hardware availability before accepting migration)
             free = self.cluster[target] - self.used[target]
             if job.current_gpu == target:
                 continue
-            need = job.d_j - (0 if job.current_gpu is None else 0)
-            if free >= job.d_j or job.current_gpu == target:
+            if free >= job.d_j:
                 # handshake OK -> commit placement/migration
-                was_fast_slot = job in active_fast
                 self._place(job, target, t, fast=False)
                 if job in self.global_queue:
                     self.global_queue.remove(job)
-            # else: handshake fails, job stays where it is / stays queued
+            else:
+                # handshake REJECTED: job stays where it is / stays queued.
+                self.handshake_rejects += 1
 
 
 # Helper lookups so cache hits still recover memory/state without reprofiling.
