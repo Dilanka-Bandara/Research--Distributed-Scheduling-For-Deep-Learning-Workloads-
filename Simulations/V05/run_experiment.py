@@ -74,8 +74,15 @@ def headline_comparison(n_jobs=120, n_per_type=12, horizon=150,
         jct_ratio = sm['jct_mean'] / max(1e-9, f['jct_mean'])
         ftf_ratio = sm['ftf_mean'] / max(1e-9, f['ftf_mean'])
         lat_speedup = f['admission_latency_mean'] / max(1e-9, sm['admission_latency_mean'])
+        prof_red = f['profile_time_lost'] / max(1e-9, sm['profile_time_lost'])
+        mig_red = f['migration_time_lost'] / max(1e-9, sm['migration_time_lost'])
         print(f"{'':8} -> JCT cost x{jct_ratio:.2f}, FTF cost x{ftf_ratio:.2f}, "
               f"admission speedup x{lat_speedup:.1f}")
+        print(f"{'':8} -> overheads: profiling cut x{prof_red:.1f} "
+              f"({f['profile_time_lost']:.1f} -> {sm['profile_time_lost']:.1f} rounds), "
+              f"migration cut x{mig_red:.1f} "
+              f"({f['migration_time_lost']:.1f} -> {sm['migration_time_lost']:.1f}), "
+              f"handshake rejects {sm['handshake_rejects']:.0f}")
 
 
 # ----------------------------------------------------------------------
@@ -195,7 +202,7 @@ def param_sweep(n_jobs=200, n_per_type=40, horizon=150, seeds=(1, 2),
 
     # Grids. Keep them small; expand once you see where the good region is.
     grid = {
-        "alpha":        [0.5, 1.0, 100.0],
+        "alpha":        [0.5, 1.0, 1.5],
         "beta":         [0.25, 0.5, 1.0],
         "gamma":        [1.0],
         "delta":        [0.5, 1.0],

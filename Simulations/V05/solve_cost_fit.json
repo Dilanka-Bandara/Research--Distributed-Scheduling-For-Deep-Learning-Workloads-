@@ -1,0 +1,17 @@
+{
+  "base_ms": 27.730508474576276,
+  "slope_ms_per_job": 0.09298305084745764,
+  "measured_N": [
+    100.0,
+    200.0,
+    400.0,
+    600.0
+  ],
+  "measured_ms": [
+    44.1,
+    36.8,
+    66.3,
+    84.6
+  ],
+  "note": "Linear fit to min-of-reps CBC solve times, 3 GPU types, lab machine. Base captures fixed CBC startup; slope captures per-job marginal solve cost. FFT solves over GPU types so scaling is near-linear in active jobs."
+}
