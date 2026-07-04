@@ -1,6 +1,6 @@
 {
-  "base_ms": 27.750023722824228,
-  "slope_ms_per_job": 0.07285154238145926,
+  "base_ms": 27.64956779325168,
+  "slope_ms_per_job": 0.06081640680164683,
   "measured_N": [
     100,
     200,
@@ -8,10 +8,10 @@
     600
   ],
   "measured_ms": [
-    40.1378999958979,
-    35.795699994196184,
-    57.183099997928366,
-    72.5903999991715
+    37.909300008323044,
+    34.034799988148734,
+    53.08700000750832,
+    64.62850001116749
   ],
   "round_seconds_default": 300.0,
   "note": "Linear fit to min-of-reps CBC solve times, 3 GPU types. base = fixed CBC startup; slope = per-job marginal solve cost. Re-run calibrate_solver.py on target hardware before quoting."
