@@ -1,0 +1,84 @@
+# Option B — the virtual cluster as containers on a real Docker network.
+#
+# Topology mirrors the FFT paper's testbed shape at type granularity:
+# three node-agent containers (T4 / V100 / A10 slot tables + workers),
+# Redis as the Global Recorder, and either {dispatcher + brain} (smart)
+# or the centralised FFT scheduler (fft). Every handshake RPC now crosses
+# a real network namespace boundary.
+#
+#   docker compose --profile smart build
+#   docker compose --profile smart up -d
+#   docker compose --profile tools run --rm orchestrator 60 bursty 1 smart 1800
+#   docker compose --profile smart down
+#
+#   docker compose --profile fft up -d
+#   docker compose --profile tools run --rm orchestrator 60 bursty 1 fft 1800
+#   docker compose --profile fft down
+#
+# Results land in ./runs on the host. `down` between runs = clean state
+# (Redis has no persistence), so no manual flushing is ever needed.
+
+x-common-env: &env
+  EMU_REDIS_HOST: redis
+  EMU_TIME_SCALE: ${EMU_TIME_SCALE:-100}
+  EMU_N_PER_TYPE: ${EMU_N_PER_TYPE:-8}
+
+x-agent: &agent
+  build: .
+  environment: *env
+  depends_on:
+    redis:
+      condition: service_healthy
+  cap_add: [NET_ADMIN]        # allows optional `tc` netem shaping inside
+  profiles: [smart, fft]
+
+services:
+  redis:
+    image: redis:7
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    profiles: [smart, fft]
+
+  agent-t4:
+    <<: *agent
+    command: ["python", "node_agent.py", "T4"]
+  agent-v100:
+    <<: *agent
+    command: ["python", "node_agent.py", "V100"]
+  agent-a10:
+    <<: *agent
+    command: ["python", "node_agent.py", "A10"]
+
+  dispatcher:
+    build: .
+    command: ["python", "dispatcher.py"]
+    environment: *env
+    depends_on: [agent-t4, agent-v100, agent-a10]
+    profiles: [smart]
+
+  brain:
+    build: .
+    command: ["python", "brain.py"]
+    environment: *env
+    depends_on: [agent-t4, agent-v100, agent-a10]
+    profiles: [smart]
+
+  fft-scheduler:
+    build: .
+    command: ["python", "fft_scheduler_proc.py"]
+    environment: *env
+    depends_on: [agent-t4, agent-v100, agent-a10]
+    profiles: [fft]
+
+  orchestrator:
+    build: .
+    entrypoint: ["python", "orchestrator.py"]
+    environment: *env
+    volumes:
+      - ./runs:/app/runs
+    profiles: [tools]
