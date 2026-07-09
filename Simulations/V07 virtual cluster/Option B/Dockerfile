@@ -5,7 +5,11 @@ FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends iproute2 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir redis scipy numpy
+# Patient pip (slow links): long timeout, many retries, one layer per package
+# so completed downloads are cached across build retries.
+RUN pip install --no-cache-dir --timeout 180 --retries 10 redis
+RUN pip install --no-cache-dir --timeout 180 --retries 10 numpy
+RUN pip install --no-cache-dir --timeout 180 --retries 10 scipy
 
 WORKDIR /app
 COPY *.py /app/
