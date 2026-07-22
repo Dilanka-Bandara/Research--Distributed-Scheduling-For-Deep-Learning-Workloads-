@@ -1,15 +1,15 @@
 {
   "n_jobs": 60,
   "n_finished": 60,
-  "jct_mean_rounds": 47.814450007014806,
-  "ftf_mean": 2.3758331618047697,
-  "starvation_mean_rounds": 6.14225584798389,
-  "decision_latency_ms_mean": 1.0015805562337239,
-  "decision_latency_rounds_mean": 0.0003338601854112413,
-  "solve_wall_ms_mean": 5.4760026931762695,
+  "jct_mean_rounds": 48.22195931805505,
+  "ftf_mean": 2.386786690500384,
+  "starvation_mean_rounds": 6.1762179970741276,
+  "decision_latency_ms_mean": 1.8849651018778484,
+  "decision_latency_rounds_mean": 0.0006283217006259494,
+  "solve_wall_ms_mean": 5.149092337097785,
   "fast_path_frac": 0.13333333333333333,
   "handshake_rejects": 423,
-  "preemptions": 42,
-  "migrations": 16,
+  "preemptions": 41,
+  "migrations": 15,
   "profile_stalls": 6
 }
