@@ -1,0 +1,19 @@
+# Keep .env OUT of Docker images — it's machine-specific
+.env
+.env.pc1.template
+.env.pc2.template
+
+# Results and archives (not needed inside containers)
+runs/
+runs_v1/
+*.zip
+*.pdf
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Docs and config files (not needed inside containers)
+*.md
+.git/
+.gitignore

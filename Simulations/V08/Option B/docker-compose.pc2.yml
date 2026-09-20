@@ -1,0 +1,41 @@
+# Option B — PC 2 (Dedicated 36-GPU Compute Cluster)
+# Hosts:
+#   - agent-t4   (12 slots)
+#   - agent-v100 (12 slots)
+#   - agent-a10  (12 slots)
+#   Total on PC 2 = 36 GPUs
+#
+# Usage:
+#   1. Start worker agents on PC 2:
+#      docker compose -f docker-compose.pc2.yml up -d --build
+#   2. Monitor live agent logs:
+#      docker compose -f docker-compose.pc2.yml logs -f
+
+x-common-env: &env
+  EMU_REDIS_HOST: "192.168.100.1"
+  EMU_REDIS_PORT: 6379
+  EMU_TIME_SCALE: ${EMU_TIME_SCALE:-100}
+  EMU_N_PER_TYPE: ${EMU_N_PER_TYPE:-12}
+  PYTHONUNBUFFERED: "1"
+
+x-agent: &agent
+  build: .
+  environment: *env
+  cap_add: [NET_ADMIN]
+  restart: unless-stopped
+
+services:
+  # T4 agent on PC 2 (12 slots)
+  agent-t4:
+    <<: *agent
+    command: ["python", "node_agent.py", "T4"]
+
+  # V100 agent on PC 2 (12 slots)
+  agent-v100:
+    <<: *agent
+    command: ["python", "node_agent.py", "V100"]
+
+  # A10 agent on PC 2 (12 slots)
+  agent-a10:
+    <<: *agent
+    command: ["python", "node_agent.py", "A10"]

@@ -1,0 +1,15 @@
+{
+  "n_jobs": 60,
+  "n_finished": 60,
+  "jct_mean_rounds": 27.094558913177913,
+  "ftf_mean": 1.3071732933149554,
+  "starvation_mean_rounds": 0.7446823848618401,
+  "decision_latency_ms_mean": 1.6306678454081216,
+  "decision_latency_rounds_mean": 0.0005435559484693739,
+  "solve_wall_ms_mean": 2.3055217954009892,
+  "fast_path_frac": 0.9833333333333333,
+  "handshake_rejects": 0,
+  "preemptions": 13,
+  "migrations": 12,
+  "profile_stalls": 0
+}
