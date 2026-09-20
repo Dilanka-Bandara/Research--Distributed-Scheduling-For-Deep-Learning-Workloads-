@@ -1,0 +1,61 @@
+# Option B — PC 1 (Controller / Master Node)
+# Hosts:
+#   - Redis (Global Recorder, Port 6379)
+#   - Brain (ILP Optimizer) / FFT Scheduler
+#   - Dispatcher (Handshake Coordinator)
+#   - Orchestrator (Workload Replayer)
+
+x-common-env: &env
+  EMU_REDIS_HOST: redis
+  EMU_REDIS_PORT: 6379
+  EMU_TIME_SCALE: ${EMU_TIME_SCALE:-100}
+  EMU_N_PER_TYPE: ${EMU_N_PER_TYPE:-12}
+  PYTHONUNBUFFERED: "1"
+
+services:
+  redis:
+    image: redis:7
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--protected-mode", "no"]
+    ports:
+      - "0.0.0.0:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    profiles: [smart, fft, tools]
+
+  dispatcher:
+    build: .
+    command: ["python", "dispatcher.py"]
+    environment: *env
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles: [smart]
+
+  brain:
+    build: .
+    command: ["python", "brain.py"]
+    environment: *env
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles: [smart]
+
+  fft-scheduler:
+    build: .
+    command: ["python", "fft_scheduler_proc.py"]
+    environment: *env
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles: [fft]
+
+  orchestrator:
+    build: .
+    entrypoint: ["python", "orchestrator.py"]
+    environment: *env
+    volumes:
+      - ./runs:/app/runs
+    profiles: [tools]

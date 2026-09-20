@@ -76,7 +76,7 @@ def chart_metrics(results):
             ax.text(i + w/2, b, f"{b:.0f}", ha="center", va="bottom", fontsize=7)
     fig.suptitle(f"Scheduler comparison across workload regimes ({N_JOBS} jobs)", fontweight="bold")
     fig.tight_layout()
-    fig.savefig("/home/claude/sim/out_metrics.png", bbox_inches="tight")
+    fig.savefig("out_metrics.png", bbox_inches="tight")
     plt.close(fig)
 
 
