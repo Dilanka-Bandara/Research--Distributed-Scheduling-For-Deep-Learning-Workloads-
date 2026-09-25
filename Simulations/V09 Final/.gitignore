@@ -1,0 +1,13 @@
+# Machine-specific environment (never share between PC 1 and PC 2)
+.env
+
+# Python
+__pycache__/
+*.pyc
+
+# Results (large, generated)
+runs/
+runs_v1/
+
+# Archives
+*.zip

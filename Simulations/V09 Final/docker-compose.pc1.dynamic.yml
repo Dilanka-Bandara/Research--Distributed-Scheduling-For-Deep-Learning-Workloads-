@@ -1,0 +1,47 @@
+# docker-compose.pc1.dynamic.yml — Phase 2 overlay for PC 1.
+#
+# Adds ONE service: the cluster-state probe. Everything else is inherited from
+# docker-compose.pc1.yml unchanged, so the schedulers run exactly as they did
+# in the static phase.
+#
+# Usage (note BOTH -f flags, base first):
+#   docker compose -f docker-compose.pc1.yml -f docker-compose.pc1.dynamic.yml \
+#       --profile smart up -d
+#
+# run_dynamic.py does this for you if you point COMPOSE_FILE at a combined
+# invocation; the simplest alternative is to paste the `probe:` block below
+# straight into docker-compose.pc1.yml and skip this file entirely.
+#
+# CRITICAL: the probe must run in BOTH profiles or in NEITHER. Running it only
+# under `smart` would add a few hundred Redis reads per minute to one arm of
+# the experiment and not the other, and a reviewer is entitled to ask whether
+# that is what moved the numbers. It is listed under both profiles below.
+
+services:
+  probe:
+    build: .
+    command: ["python", "probe.py", "5"]     # 5 Hz
+    environment:
+      EMU_NODE_LABEL: "PC1"
+      EMU_REDIS_HOST: redis
+      EMU_REDIS_PORT: 6379
+      EMU_TIME_SCALE: ${EMU_TIME_SCALE:-100}
+      EMU_N_PER_TYPE: ${EMU_N_PER_TYPE:-12}
+      PYTHONUNBUFFERED: "1"
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles: [smart, fft]
+
+  # The orchestrator needs EMU_HORIZON_PER_JOB, which is per-regime and so
+  # cannot live in .env. run_dynamic.py passes it with `-e` on the `run`
+  # command; this default keeps a manual invocation from silently replaying at
+  # the stock 1.4 and producing an uncalibrated, saturated trace.
+  orchestrator:
+    environment:
+      EMU_REDIS_HOST: redis
+      EMU_REDIS_PORT: 6379
+      EMU_TIME_SCALE: ${EMU_TIME_SCALE:-100}
+      EMU_N_PER_TYPE: ${EMU_N_PER_TYPE:-12}
+      EMU_HORIZON_PER_JOB: ${EMU_HORIZON_PER_JOB:-1.84}
+      PYTHONUNBUFFERED: "1"
